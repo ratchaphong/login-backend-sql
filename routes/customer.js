@@ -35,7 +35,41 @@ router.get("/query", verifyToken, function (req, res, next) {
   );
 });
 
-router.get("/searchById", verifyToken, function (req, res, next) {
+router.get("/search", function (req, res, next) {
+  console.log(req.query);
+  const page = parseInt(req.query.page);
+  const per_page = parseInt(req.query.per_page);
+  const sort_column = req.query.sort_column;
+  const sort_direction = req.query.sort_direction;
+  const search = req.query.search;
+  const start_idx = (page - 1) * per_page;
+  var params = [];
+  var sql = "SELECT * FROM customers";
+  if (search) {
+    sql += " WHERE name LIKE ? ";
+    params.push("%" + search + "%");
+  }
+  if (sort_column) {
+    sql += " ORDER BY " + sort_column + " " + sort_direction;
+  }
+  sql += " LIMIT ?, ?";
+  params.push(start_idx);
+  params.push(per_page);
+
+  connection.execute(sql, params, function (err, results, fields) {
+    if (err) {
+      res.status(400).json({ status: "error", message: err });
+      return;
+    }
+    res.status(200).json({
+      status: "success",
+      data: results,
+    });
+  });
+});
+//localhost:3333/api/customer/search?page=1&per_page=10&sort_column=name&search=a&sort_direction=ASC
+
+http: router.get("/searchById", verifyToken, function (req, res, next) {
   connection.execute(
     `SELECT id, name, age, address FROM customers WHERE id=?`,
     [req.query.id],
